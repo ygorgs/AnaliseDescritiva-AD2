@@ -1,0 +1,102 @@
+---
+title: "Checkpoint 4"
+author: "Ygor Santos"
+date: "21 de março de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Bibliotecas Usadas
+library(ggplot2)
+library(dplyr)
+library(gmodels)
+```
+
+## Você, pra valer
+
+Os dados usados na analise são os registros de notas dos alunos matriculadas na UFCG entre os periodos 2002.1 e 2014.1. Eles possuem as seguintes informações:
+
+```{r dados}
+
+#leitura dos dados
+dados <- read.table("alunosUFCGAnon.csv", header=T, sep=",", dec=".", encoding="UTF-8")
+
+```
+
+## Perguntas:
+
+###Primeira
+
+**Alunos que entram na primeira chamada (primeiro semestre) apresentam um desempenho melhor do que os alunos que entram na segunda chamada (segundo semestre)?**
+
+**Resposta Esperada: **Se levar em conta a seleção do vestibular, onde, assume-se que os primeiros colocados são os mais qualificados (devido a sua nota e posição), os alunos que entram no primeiro semestre devem possuir um melhor desempenho no decorrer do curso (CRA, quantidade de aprovações). 
+
+### Código usado
+
+```{r pergunta1}
+
+#filtro dos alunos que entraram no primeiro semestre
+alunosPrimeiraEntrada <- filter(dados, substr(Periodo_Ingresso, 5,6)==".1")
+
+#filtro dos alunos que entraram no segundo semestre
+alunosSegundaEntrada <- filter(dados, substr(Periodo_Ingresso, 5,6)==".2")
+
+```
+
+```{r gráfico1, echo=FALSE}
+
+boxplot(alunosPrimeiraEntrada$Media_Disciplina, alunosSegundaEntrada$Media_Disciplina , names=c("Primeira Entrada","Segunda Entrada"), ylab="Médias")
+
+```
+------
+O grafico acima mostra a distribuição das médias de cada grupo de aluno. 
+Analisando o resultado obtido vemos que, apesar de ambos serem positivamente assimétricos, os alunos que entram no primeiro semestre apresentam um desempenho um pouco melhor, pois sua mediana é um pouco maior, suas médias tambem são menos dispersas e o limite inferior do primeiro gráfico é um pouco mais elevado do que o do segundo gráfico.
+Com isso, vemos que a resposta final foi a esperada.
+
+###Segunda
+
+**Há alguma relação entre o número de créditos de uma disciplina com sua taxa de reprovação?**
+
+**Resposta Esperada:** Eu acredito que as disciplinas que possuem uma carga horaria maior costumam reprovar mais, pois da mesma forma que elas exigem mais horas de aula, também exigem muito mais tempo extraclasse para estudo e realização de trabalhos/atividades.
+
+```{r pergunta2}
+
+#relação de alunos que cursaram uma disciplina até o fim
+alunosTotal <- filter(dados, Situacao!="Trancado")
+
+#relação de alunos reprovados
+alunosReprovados <- filter(dados, Situacao!="Aprovado", Situacao!="Trancado")
+
+#Créditos das disciplinas
+creditosReprovados <- alunosReprovados$Creditos
+creditosTotal <- alunosTotal$Creditos
+
+#Contagens para cada tipo de disciplina
+countsReprovados <- data.frame(table(creditosReprovados))
+countsTotal <- data.frame(table(creditosTotal))
+
+#filtro das disciplinas que houveram reprovações
+countsTotal <- filter(countsTotal, creditosTotal %in% countsReprovados$creditosReprovados)
+
+#calculo da porcentagem de reprovações para cada tipo de disciplina
+countsTotal$Reprovados <- countsReprovados$Freq/countsTotal$Freq
+
+```
+```{r gráfico2, echo=FALSE}
+
+qplot(countsTotal$creditosTotal, countsTotal$Reprovados, xlab="Créditos da Disciplina", ylab = "Porcentagem de Reprovação", main = "Porcentagem de Reprovação para cada categoria de disciplina")
+
+```
+```{r correlacao1}
+
+cor(as.numeric(countsTotal$creditosTotal), countsTotal$Reprovados)
+
+```
+
+
+O gráfico mostra as disciplinas agrupadas de acordo com seu número de créditos e a porcentagem de reprovações que cada uma possuí.
+Analisando o gráfico acima vemos que as disciplinas que possuem o maior número de créditos, possuem os menores índices de reprovação, de fato ambas as variaveis possuem uma correlação negativa (apesar dessa correlação ser fraca). Disciplinas com 11 créditos costumam reprovar mais, sendo seguida por disciplinas de 4 e 6 créditos (que são mais comuns).
+Por fim, a resposta final não foi a esperada.
+
+------
